@@ -16,9 +16,9 @@ npm test
 `npm test` runs the unit tests and the Playwright end-to-end tests (headless Chromium, started and stopped by the tests).
 
 ## Release
-Pushing a version tag runs the tests and then deploys the page to GitHub Pages (https://beer4ever83.github.io/QRgen/):
+Pushing a version tag (`X.Y.Z`, no `v` prefix) runs the tests and then deploys the page to GitHub Pages (https://beer4ever83.github.io/QRgen/):
 ```sh
-git tag v1.0.0
-git push origin v1.0.0
+git tag 1.0.0
+git push origin 1.0.0
 ```
 Tests also run on every push and pull request.
