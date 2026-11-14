@@ -13,8 +13,10 @@ const downloadPng = document.querySelector("#download-png");
 const downloadSvg = document.querySelector("#download-svg");
 
 let objectUrls = [];
+let latest = 0;
 
 function showError(message) {
+  latest++;
   errorEl.textContent = message;
   errorEl.hidden = false;
   result.hidden = true;
@@ -47,6 +49,7 @@ async function pngBlob(matrix) {
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
+  const id = ++latest;
 
   const normalized = normalizeUrl(input.value);
   if (!normalized.ok) return showError(normalized.error);
@@ -60,7 +63,14 @@ form.addEventListener("submit", async (event) => {
     throw e;
   }
 
-  const png = await pngBlob(matrix);
+  let png;
+  try {
+    png = await pngBlob(matrix);
+  } catch {
+    if (id === latest) showError("Could not generate the PNG.");
+    return;
+  }
+  if (id !== latest) return;
 
   revokeObjectUrls();
   const svgUrl = objectUrl(new Blob([toSvg(matrix)], { type: "image/svg+xml" }));

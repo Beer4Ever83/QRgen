@@ -122,3 +122,18 @@ test("a second submit replaces the first result", async () => {
   assert.equal(name, "qr-b.example.png");
   assert.equal((await decodePng(path)).text, "https://b.example/");
 });
+
+test("an invalid submit right after a valid one is not overwritten by the pending result", async () => {
+  await page.evaluate(() => {
+    const input = document.querySelector("#url-input");
+    const form = document.querySelector("#qr-form");
+    input.value = "https://a.example/";
+    form.requestSubmit();
+    input.value = "javascript:alert(1)";
+    form.requestSubmit();
+  });
+  await page.locator("#error").waitFor({ state: "visible" });
+  await page.waitForTimeout(500);
+  assert.equal(await page.locator("#error").isVisible(), true);
+  assert.equal(await page.locator("#result").isHidden(), true);
+});
