@@ -28,11 +28,17 @@ test("the maximum payload (2331 bytes) fits in version 40", () => {
 });
 
 test("one byte more throws CapacityError", () => {
-  assert.throws(() => createMatrix("a".repeat(2332)), CapacityError);
-  try {
-    createMatrix("a".repeat(2332));
-  } catch (e) {
-    assert.ok(e instanceof Error);
-    assert.equal(e.message, "This URL is too long to fit in a QR code.");
-  }
+  assert.throws(
+    () => createMatrix("a".repeat(2332)),
+    (e) =>
+      e instanceof CapacityError &&
+      e instanceof Error &&
+      e.message === "This URL is too long to fit in a QR code.",
+  );
+});
+
+test("a huge input throws CapacityError quickly", () => {
+  const start = performance.now();
+  assert.throws(() => createMatrix("a".repeat(1_000_000)), CapacityError);
+  assert.ok(performance.now() - start < 250, "should fail fast");
 });

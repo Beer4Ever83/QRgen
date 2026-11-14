@@ -137,3 +137,19 @@ test("an invalid submit right after a valid one is not overwritten by the pendin
   assert.equal(await page.locator("#error").isVisible(), true);
   assert.equal(await page.locator("#result").isHidden(), true);
 });
+
+test("the page triggers no CSP violations", async () => {
+  await page.addInitScript(() => {
+    window.__cspViolations = [];
+    document.addEventListener("securitypolicyviolation", (e) =>
+      window.__cspViolations.push(`${e.violatedDirective} ${e.blockedURI}`),
+    );
+  });
+  await page.reload();
+  await submit("example.com");
+  await page.locator("#result").waitFor({ state: "visible" });
+  await page.locator("#preview").evaluate((img) => img.decode());
+  await download("#download-png");
+  await download("#download-svg");
+  assert.deepEqual(await page.evaluate(() => window.__cspViolations), []);
+});

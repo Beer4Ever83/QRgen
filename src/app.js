@@ -60,7 +60,8 @@ form.addEventListener("submit", async (event) => {
     matrix = createMatrix(url);
   } catch (e) {
     if (e instanceof CapacityError) return showError(e.message);
-    throw e;
+    showError("Could not generate the QR code.");
+    return;
   }
 
   let png;

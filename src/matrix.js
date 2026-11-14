@@ -9,7 +9,11 @@ export class CapacityError extends Error {
   }
 }
 
+const MAX_BYTES = 2331; // byte-mode capacity at level M, version 40
+
 export function createMatrix(text) {
+  // Input must be ASCII: the library truncates chars to 8 bits. Guaranteed by URL.href from normalizeUrl.
+  if (text.length > MAX_BYTES) throw new CapacityError();
   const qr = qrcode(0, "M");
   qr.addData(text);
   try {
