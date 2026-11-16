@@ -1,6 +1,8 @@
 # QRgen
 A client-side QR-code generator: enter a URL, get a QR code you can download as PNG or SVG. Everything runs in the browser; the URL never leaves it.
 
+**Try it at https://beer4ever83.github.io/QRgen/**
+
 ## Run locally
 ```sh
 npm start
