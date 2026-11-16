@@ -52,3 +52,50 @@ for (const [name, text, expected] of roundTrips) {
     assert.equal(result.data, expected);
   });
 }
+
+const small = createMatrix("https://example.com/");
+
+test("the size preset is the upper bound of the image width", () => {
+  assert.equal(toPixels(small, { size: 4096 }).width, 4092);
+  assert.equal(toPixels(small, { size: 2048 }).width, 2046);
+  assert.equal(toPixels(small, { size: 256 }).width, 231);
+});
+
+test("a wider margin keeps more white around the code", () => {
+  const img = toPixels(small, { margin: 10 });
+  const scale = Math.floor(1024 / 45);
+  assert.equal(img.width, 45 * scale);
+  assert.deepEqual(pixelAt(img, 10 * scale - 1, 10 * scale - 1), [255, 255, 255, 255]);
+  assert.deepEqual(pixelAt(img, 10 * scale, 10 * scale), [0, 0, 0, 255]);
+});
+
+test("custom colours are used for modules and background", () => {
+  const img = toPixels(small, { fg: "#274472", bg: "#d5e0f2" });
+  assert.deepEqual(pixelAt(img, 0, 0), [0xd5, 0xe0, 0xf2, 255]);
+  assert.deepEqual(pixelAt(img, 4 * 31, 4 * 31), [0x27, 0x44, 0x72, 255]);
+});
+
+test("a transparent background keeps white RGB with zero alpha", () => {
+  const img = toPixels(small, { bg: "#d5e0f2", transparent: true });
+  assert.deepEqual(pixelAt(img, 0, 0), [255, 255, 255, 0]);
+  assert.deepEqual(pixelAt(img, 4 * 31, 4 * 31), [0, 0, 0, 255]);
+});
+
+const optionTrips = [
+  ["error correction L", { ecLevel: "L" }, {}],
+  ["error correction Q", { ecLevel: "Q" }, {}],
+  ["error correction H", { ecLevel: "H" }, {}],
+  ["a fixed version 10", { version: 10 }, {}],
+  ["a 20-module margin", {}, { margin: 20 }],
+  ["navy on soft blue", {}, { fg: "#274472", bg: "#d5e0f2" }],
+  ["a transparent background", {}, { transparent: true }],
+  ["the smallest size", {}, { size: 256 }],
+];
+
+for (const [name, matrixOptions, pixelOptions] of optionTrips) {
+  test(`round-trip decodes with ${name}`, () => {
+    const text = "https://example.com/some/path?q=1";
+    const { data, width, height } = toPixels(createMatrix(text, matrixOptions), pixelOptions);
+    assert.equal(jsQR(data, width, height)?.data, text);
+  });
+}

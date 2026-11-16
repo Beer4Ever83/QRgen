@@ -32,6 +32,25 @@ test("the root element has no width or height so it scales to its container", ()
 });
 
 test("the background is a white rect and the modules are black", () => {
-  assert.ok(svg.includes('<rect width="33" height="33" fill="#fff"/>'));
-  assert.ok(svg.includes('<path fill="#000" d="'));
+  assert.ok(svg.includes('<rect width="33" height="33" fill="#ffffff"/>'));
+  assert.ok(svg.includes('<path fill="#000000" d="'));
+});
+
+test("a wider margin grows the viewBox and offsets the modules", () => {
+  const wide = toSvg(matrix, { margin: 10 });
+  assert.ok(wide.includes('viewBox="0 0 45 45"'));
+  const first = wide.match(/M(\d+),(\d+)/);
+  assert.deepEqual([first[1], first[2]], ["10", "10"]);
+});
+
+test("custom colours are used for modules and background", () => {
+  const coloured = toSvg(matrix, { fg: "#274472", bg: "#d5e0f2" });
+  assert.ok(coloured.includes('<rect width="33" height="33" fill="#d5e0f2"/>'));
+  assert.ok(coloured.includes('<path fill="#274472" d="'));
+});
+
+test("a transparent background has no rect", () => {
+  const clear = toSvg(matrix, { bg: "#d5e0f2", transparent: true });
+  assert.ok(!clear.includes("<rect"));
+  assert.ok(clear.includes('<path fill="#000000" d="'));
 });
