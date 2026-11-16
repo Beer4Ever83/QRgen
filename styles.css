@@ -79,7 +79,32 @@ button:hover {
   background: var(--navy-dark);
 }
 
+.languages {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.languages button {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0.25rem 0.75rem;
+  background: #fff;
+  color: var(--navy);
+}
+
+.languages button:hover {
+  background: var(--soft-blue);
+}
+
+.languages button[aria-pressed="true"] {
+  background: var(--navy);
+  color: #fff;
+}
+
 button:focus-visible,
+.languages button:focus-visible,
 .downloads a:focus-visible {
   outline: 3px solid var(--mauve);
   outline-offset: 2px;

@@ -2,6 +2,9 @@ import { normalizeUrl, fileBaseName } from "./url.js";
 import { createMatrix, CapacityError } from "./matrix.js";
 import { toPixels } from "./pixels.js";
 import { toSvg } from "./svg.js";
+import { HTML_LANG, t, resolveLanguage } from "./i18n.js";
+
+const STORAGE_KEY = "qrgen.lang";
 
 const form = document.querySelector("#qr-form");
 const input = document.querySelector("#url-input");
@@ -11,13 +14,56 @@ const preview = document.querySelector("#preview");
 const encodedUrl = document.querySelector("#encoded-url");
 const downloadPng = document.querySelector("#download-png");
 const downloadSvg = document.querySelector("#download-svg");
+const languages = document.querySelector("nav.languages");
 
 let objectUrls = [];
 let latest = 0;
+let lang = resolveLanguage(readStoredLanguage());
+let errorKey = null;
+let resultUrl = null;
 
-function showError(message) {
+function readStoredLanguage() {
+  try {
+    return localStorage.getItem(STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function storeLanguage(value) {
+  try {
+    localStorage.setItem(STORAGE_KEY, value);
+  } catch {
+    // Storage blocked (e.g. privacy mode): the choice lasts until reload.
+  }
+}
+
+function render() {
+  document.documentElement.lang = HTML_LANG[lang];
+  for (const el of document.querySelectorAll("[data-i18n]")) {
+    el.textContent = t(lang, el.dataset.i18n);
+  }
+  languages.setAttribute("aria-label", t(lang, "language"));
+  for (const button of languages.querySelectorAll("button")) {
+    button.setAttribute("aria-pressed", String(button.dataset.lang === lang));
+  }
+  if (errorKey) errorEl.textContent = t(lang, errorKey);
+  if (resultUrl) preview.alt = t(lang, "alt", { url: resultUrl });
+}
+
+languages.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-lang]");
+  if (!button) return;
+  lang = resolveLanguage(button.dataset.lang);
+  storeLanguage(lang);
+  render();
+});
+
+function showError(key) {
   latest++;
-  errorEl.textContent = message;
+  errorKey = key;
+  resultUrl = null;
+  errorEl.textContent = t(lang, key);
   errorEl.hidden = false;
   result.hidden = true;
 }
@@ -59,8 +105,8 @@ form.addEventListener("submit", async (event) => {
   try {
     matrix = createMatrix(url);
   } catch (e) {
-    if (e instanceof CapacityError) return showError(e.message);
-    showError("Could not generate the QR code.");
+    if (e instanceof CapacityError) return showError(e.code);
+    showError("generic");
     return;
   }
 
@@ -68,7 +114,7 @@ form.addEventListener("submit", async (event) => {
   try {
     png = await pngBlob(matrix);
   } catch {
-    if (id === latest) showError("Could not generate the PNG.");
+    if (id === latest) showError("png");
     return;
   }
   if (id !== latest) return;
@@ -77,7 +123,9 @@ form.addEventListener("submit", async (event) => {
   const svgUrl = objectUrl(new Blob([toSvg(matrix)], { type: "image/svg+xml" }));
   const base = fileBaseName(url);
   preview.src = svgUrl;
-  preview.alt = "QR code for " + url;
+  resultUrl = url;
+  errorKey = null;
+  preview.alt = t(lang, "alt", { url });
   downloadSvg.href = svgUrl;
   downloadSvg.download = base + ".svg";
   downloadPng.href = objectUrl(png);
@@ -86,3 +134,5 @@ form.addEventListener("submit", async (event) => {
   errorEl.hidden = true;
   result.hidden = false;
 });
+
+render();

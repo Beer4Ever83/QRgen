@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="it">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -9,19 +9,24 @@
 </head>
 <body>
   <main>
+    <nav class="languages" aria-label="Lingua">
+      <button type="button" data-lang="it" aria-pressed="true">IT</button>
+      <button type="button" data-lang="en" aria-pressed="false">EN</button>
+      <button type="button" data-lang="es" aria-pressed="false">ES</button>
+    </nav>
     <h1>QRgen</h1>
     <form id="qr-form" novalidate>
-      <label for="url-input">URL</label>
+      <label for="url-input" data-i18n="label">URL</label>
       <input id="url-input" type="text" inputmode="url" autocomplete="url" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="https://example.com" autofocus>
-      <button type="submit">Generate</button>
+      <button type="submit" data-i18n="generate">Genera</button>
     </form>
     <p id="error" role="alert" hidden></p>
     <section id="result" hidden>
       <img id="preview" alt="">
       <p id="encoded-url"></p>
       <p class="downloads">
-        <a id="download-png" download>Download PNG</a>
-        <a id="download-svg" download>Download SVG</a>
+        <a id="download-png" download data-i18n="downloadPng">Scarica PNG</a>
+        <a id="download-svg" download data-i18n="downloadSvg">Scarica SVG</a>
       </p>
     </section>
   </main>
