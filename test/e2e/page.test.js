@@ -5,6 +5,7 @@ import { chromium } from "playwright";
 import { PNG } from "pngjs";
 import jsQR from "jsqr";
 import { startServer } from "../../scripts/serve.js";
+import { HTML_LANG, t } from "../../src/i18n.js";
 
 let server;
 let browser;
@@ -65,7 +66,7 @@ test("shows the result for a URL without a scheme", async () => {
   assert.equal(await page.locator("#error").isHidden(), true);
   assert.equal(await page.locator("#encoded-url").textContent(), "https://example.com/");
   const preview = page.locator("#preview");
-  assert.equal(await preview.getAttribute("alt"), "QR code for https://example.com/");
+  assert.equal(await preview.getAttribute("alt"), t("it", "alt", { url: "https://example.com/" }));
   assert.ok((await preview.getAttribute("src")).startsWith("blob:"));
   await preview.evaluate((img) => img.decode());
 });
@@ -94,14 +95,14 @@ test("rejects non-http schemes and hides the previous result", async () => {
   await page.locator("#result").waitFor({ state: "visible" });
   await submit("javascript:alert(1)");
   await page.locator("#error").waitFor({ state: "visible" });
-  assert.equal(await page.locator("#error").textContent(), "Only http and https URLs are supported.");
+  assert.equal(await page.locator("#error").textContent(), t("it", "scheme"));
   assert.equal(await page.locator("#result").isHidden(), true);
 });
 
 test("rejects empty input", async () => {
   await submit("");
   await page.locator("#error").waitFor({ state: "visible" });
-  assert.equal(await page.locator("#error").textContent(), "Please enter a URL.");
+  assert.equal(await page.locator("#error").textContent(), t("it", "empty"));
 });
 
 test("rejects URLs that are too long", async () => {
@@ -109,7 +110,7 @@ test("rejects URLs that are too long", async () => {
   await page.locator("#error").waitFor({ state: "visible" });
   assert.equal(
     await page.locator("#error").textContent(),
-    "This URL is too long to fit in a QR code.",
+    t("it", "tooLong"),
   );
 });
 
@@ -152,4 +153,94 @@ test("the page triggers no CSP violations", async () => {
   await download("#download-png");
   await download("#download-svg");
   assert.deepEqual(await page.evaluate(() => window.__cspViolations), []);
+});
+
+async function copy(p = page) {
+  return {
+    lang: await p.locator("html").getAttribute("lang"),
+    label: await p.locator("label[for=url-input]").textContent(),
+    generate: await p.locator("button[type=submit]").textContent(),
+    png: await p.locator("#download-png").textContent(),
+    svg: await p.locator("#download-svg").textContent(),
+    nav: await p.locator("nav.languages").getAttribute("aria-label"),
+    pressed: await p.locator("nav.languages button[aria-pressed=true]").getAttribute("data-lang"),
+  };
+}
+
+function expectedCopy(lang) {
+  return {
+    lang: HTML_LANG[lang],
+    label: t(lang, "label"),
+    generate: t(lang, "generate"),
+    png: t(lang, "downloadPng"),
+    svg: t(lang, "downloadSvg"),
+    nav: t(lang, "language"),
+    pressed: lang,
+  };
+}
+
+test("the page is in Italian by default", async () => {
+  assert.deepEqual(await copy(), expectedCopy("it"));
+});
+
+test("the page is in Italian before any script runs", async () => {
+  const noJs = await browser.newContext({ javaScriptEnabled: false });
+  const p = await noJs.newPage();
+  await p.goto(server.url);
+  assert.deepEqual(await copy(p), expectedCopy("it"));
+  await noJs.close();
+});
+
+test("switching to English and Spanish translates the page", async () => {
+  for (const lang of ["en", "es", "it"]) {
+    await page.click(`nav.languages button[data-lang=${lang}]`);
+    assert.deepEqual(await copy(), expectedCopy(lang));
+  }
+});
+
+test("switching language translates the error on screen", async () => {
+  await submit("");
+  await page.locator("#error").waitFor({ state: "visible" });
+  await page.click("nav.languages button[data-lang=es]");
+  assert.equal(await page.locator("#error").textContent(), t("es", "empty"));
+  await page.click("nav.languages button[data-lang=en]");
+  assert.equal(await page.locator("#error").textContent(), t("en", "empty"));
+});
+
+test("switching language translates the result without regenerating it", async () => {
+  await submit("example.com");
+  await page.locator("#result").waitFor({ state: "visible" });
+  const src = await page.locator("#preview").getAttribute("src");
+  await page.click("nav.languages button[data-lang=en]");
+  assert.equal(await page.locator("#preview").getAttribute("alt"), t("en", "alt", { url: "https://example.com/" }));
+  assert.equal(await page.locator("#preview").getAttribute("src"), src);
+});
+
+test("an error raised after switching is in the new language", async () => {
+  await page.click("nav.languages button[data-lang=es]");
+  await submit("javascript:alert(1)");
+  await page.locator("#error").waitFor({ state: "visible" });
+  assert.equal(await page.locator("#error").textContent(), t("es", "scheme"));
+});
+
+test("the chosen language survives a reload", async () => {
+  await page.click("nav.languages button[data-lang=es]");
+  await page.reload();
+  assert.deepEqual(await copy(), expectedCopy("es"));
+});
+
+test("an unknown stored language falls back to Italian", async () => {
+  await page.evaluate(() => localStorage.setItem("qrgen.lang", "fr"));
+  await page.reload();
+  assert.deepEqual(await copy(), expectedCopy("it"));
+});
+
+test("the page works when storage is unavailable", async () => {
+  await page.addInitScript(() => {
+    Object.defineProperty(window, "localStorage", { get() { throw new Error("blocked"); } });
+  });
+  await page.reload();
+  assert.deepEqual(await copy(), expectedCopy("it"));
+  await page.click("nav.languages button[data-lang=en]");
+  assert.deepEqual(await copy(), expectedCopy("en"));
 });

@@ -1,6 +1,6 @@
-export const EMPTY_ERROR = "Please enter a URL.";
-export const SCHEME_ERROR = "Only http and https URLs are supported.";
-export const INVALID_ERROR = "This doesn't look like a valid URL.";
+export const EMPTY_ERROR = "empty";
+export const SCHEME_ERROR = "scheme";
+export const INVALID_ERROR = "invalid";
 
 export function normalizeUrl(input) {
   const trimmed = input.trim();

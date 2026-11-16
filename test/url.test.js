@@ -41,10 +41,10 @@ for (const [input, error] of errorCases) {
   });
 }
 
-test("error copy is exact", () => {
-  assert.equal(EMPTY_ERROR, "Please enter a URL.");
-  assert.equal(SCHEME_ERROR, "Only http and https URLs are supported.");
-  assert.equal(INVALID_ERROR, "This doesn't look like a valid URL.");
+test("errors are reported as message keys", () => {
+  assert.equal(EMPTY_ERROR, "empty");
+  assert.equal(SCHEME_ERROR, "scheme");
+  assert.equal(INVALID_ERROR, "invalid");
 });
 
 const nameCases = [
