@@ -6,6 +6,7 @@ export class CapacityError extends Error {
   constructor() {
     super("This URL is too long to fit in a QR code.");
     this.name = "CapacityError";
+    this.code = "tooLong";
   }
 }
 
