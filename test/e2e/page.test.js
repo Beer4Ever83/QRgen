@@ -244,3 +244,174 @@ test("the page works when storage is unavailable", async () => {
   await page.click("nav.languages button[data-lang=en]");
   assert.deepEqual(await copy(), expectedCopy("en"));
 });
+
+async function openAdvanced() {
+  await page.click("#advanced summary");
+}
+
+async function waitForNewPreview(oldSrc) {
+  await page.waitForFunction(
+    (src) => {
+      const img = document.querySelector("#preview");
+      return !document.querySelector("#result").hidden && img.src !== src;
+    },
+    oldSrc,
+  );
+}
+
+async function generated(text) {
+  await submit(text);
+  await page.locator("#result").waitFor({ state: "visible" });
+  return page.locator("#preview").getAttribute("src");
+}
+
+async function fieldValues() {
+  return page.evaluate(() => ({
+    ecLevel: document.querySelector("#ec-level").value,
+    version: document.querySelector("#version").value,
+    margin: document.querySelector("#margin").value,
+    size: document.querySelector("#size").value,
+    fg: document.querySelector("#fg").value,
+    bg: document.querySelector("#bg").value,
+    transparent: document.querySelector("#transparent").checked,
+  }));
+}
+
+const DEFAULT_FIELDS = {
+  ecLevel: "M", version: "0", margin: "4", size: "1024", fg: "#000000", bg: "#ffffff", transparent: false,
+};
+
+test("advanced settings are closed by default and show the defaults", async () => {
+  assert.equal(await page.locator("#advanced").evaluate((d) => d.open), false);
+  assert.equal(await page.locator("#ec-level").isVisible(), false);
+  assert.deepEqual(await fieldValues(), DEFAULT_FIELDS);
+  assert.equal(await page.locator("#version option").count(), 41);
+  assert.equal(await page.locator("#size option").count(), 6);
+});
+
+test("changing a setting regenerates the QR code shown", async () => {
+  const src = await generated("example.com");
+  await openAdvanced();
+  await page.selectOption("#ec-level", "H");
+  await waitForNewPreview(src);
+  const { path } = await download("#download-png");
+  const png = await decodePng(path);
+  assert.equal(png.text, "https://example.com/");
+  assert.equal(png.width, 999); // version 3 at level H: 37 modules x 27 px
+});
+
+test("a setting change regenerates the last generated URL, not unsubmitted input", async () => {
+  const src = await generated("https://a.example/");
+  await page.fill("#url-input", "https://b.example/");
+  await openAdvanced();
+  await page.selectOption("#size", "2048");
+  await waitForNewPreview(src);
+  const { name, path } = await download("#download-png");
+  assert.equal(name, "qr-a.example.png");
+  const png = await decodePng(path);
+  assert.equal(png.text, "https://a.example/");
+  assert.equal(png.width, 2046);
+});
+
+test("colours, margin and transparency reach the downloads", async () => {
+  await openAdvanced();
+  await page.locator("#fg").fill("#274472");
+  await page.locator("#bg").fill("#d5e0f2");
+  await page.fill("#margin", "10");
+  await page.locator("#margin").dispatchEvent("change");
+  await generated("example.com");
+  const svg = await readFile((await download("#download-svg")).path, "utf8");
+  assert.ok(svg.includes('viewBox="0 0 45 45"'));
+  assert.ok(svg.includes('fill="#274472"'));
+  assert.ok(svg.includes('fill="#d5e0f2"'));
+  assert.equal((await decodePng((await download("#download-png")).path)).text, "https://example.com/");
+  const src = await page.locator("#preview").getAttribute("src");
+  await page.check("#transparent");
+  assert.equal(await page.locator("#bg").isDisabled(), true);
+  await waitForNewPreview(src);
+  const clear = await readFile((await download("#download-svg")).path, "utf8");
+  assert.ok(!clear.includes("<rect"));
+});
+
+test("the margin cannot go below 4 or above 20", async () => {
+  await openAdvanced();
+  await page.fill("#margin", "1");
+  await page.locator("#margin").dispatchEvent("change");
+  assert.equal(await page.inputValue("#margin"), "4");
+  await page.fill("#margin", "50");
+  await page.locator("#margin").dispatchEvent("change");
+  assert.equal(await page.inputValue("#margin"), "20");
+});
+
+test("settings survive a reload and reset restores the defaults", async () => {
+  await openAdvanced();
+  await page.selectOption("#ec-level", "Q");
+  await page.selectOption("#version", "10");
+  await page.selectOption("#size", "4096");
+  await page.reload();
+  const kept = await fieldValues();
+  assert.equal(kept.ecLevel, "Q");
+  assert.equal(kept.version, "10");
+  assert.equal(kept.size, "4096");
+  await openAdvanced();
+  await page.click("#reset");
+  assert.deepEqual(await fieldValues(), DEFAULT_FIELDS);
+  await page.reload();
+  assert.deepEqual(await fieldValues(), DEFAULT_FIELDS);
+});
+
+test("garbage in stored settings falls back to the defaults", async () => {
+  await page.evaluate(() => localStorage.setItem("qrgen.settings", "{"));
+  await page.reload();
+  assert.deepEqual(await fieldValues(), DEFAULT_FIELDS);
+  await page.evaluate(() =>
+    localStorage.setItem("qrgen.settings", JSON.stringify({ ecLevel: "H", margin: 99, fg: "red" })),
+  );
+  await page.reload();
+  assert.deepEqual(await fieldValues(), { ...DEFAULT_FIELDS, ecLevel: "H", margin: "20" });
+});
+
+test("low-contrast colours show a warning", async () => {
+  await openAdvanced();
+  const warning = page.locator("#contrast-warning");
+  assert.equal(await warning.isVisible(), false);
+  await page.locator("#fg").fill("#777777");
+  await page.locator("#bg").fill("#888888");
+  await warning.waitFor({ state: "visible" });
+  assert.equal(await warning.textContent(), t("it", "contrastWarning"));
+  await page.click("#reset");
+  await warning.waitFor({ state: "hidden" });
+});
+
+test("a grid too small for the URL shows an error, and a bigger one fixes it", async () => {
+  await openAdvanced();
+  await page.selectOption("#version", "1");
+  await submit("https://example.com/" + "a".repeat(100));
+  await page.locator("#error").waitFor({ state: "visible" });
+  assert.equal(await page.locator("#error").textContent(), t("it", "tooLongForSize"));
+  await page.selectOption("#version", "0");
+  await page.locator("#result").waitFor({ state: "visible" });
+  assert.equal(await page.locator("#error").isHidden(), true);
+});
+
+test("switching language translates the advanced settings", async () => {
+  await page.click("nav.languages button[data-lang=es]");
+  assert.equal(await page.locator("#advanced summary").textContent(), t("es", "advanced"));
+  assert.equal(await page.locator("label[for=ec-level]").textContent(), t("es", "ecLevel"));
+  assert.equal(await page.locator("#ec-level option[value=H]").textContent(), t("es", "ecH"));
+  assert.equal(await page.locator("#version option[value='0']").textContent(), t("es", "versionAuto"));
+  assert.equal(await page.locator("#size option[value='1024']").textContent(), t("es", "sizeOption", { px: "1024" }));
+  assert.equal(await page.locator("#reset").textContent(), t("es", "reset"));
+});
+
+test("every static text is Italian before any script runs", async () => {
+  const noJs = await browser.newContext({ javaScriptEnabled: false });
+  const p = await noJs.newPage();
+  await p.goto(server.url);
+  const texts = await p.$$eval("[data-i18n]", (els) =>
+    els.map((el) => ({ key: el.dataset.i18n, params: { ...el.dataset }, text: el.textContent })),
+  );
+  assert.ok(texts.length > 15);
+  for (const { key, params, text } of texts) assert.equal(text, t("it", key, params), key);
+  await noJs.close();
+});

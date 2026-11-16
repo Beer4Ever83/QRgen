@@ -19,6 +19,40 @@
       <label for="url-input" data-i18n="label">URL</label>
       <input id="url-input" type="text" inputmode="url" autocomplete="url" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="https://example.com" autofocus>
       <button type="submit" data-i18n="generate">Genera</button>
+      <details id="advanced">
+        <summary data-i18n="advanced">Impostazioni avanzate</summary>
+        <div class="settings">
+          <label for="ec-level" data-i18n="ecLevel">Resistenza ai danni</label>
+          <select id="ec-level">
+            <option value="L" data-i18n="ecL">Bassa (~7%)</option>
+            <option value="M" data-i18n="ecM" selected>Media (~15%)</option>
+            <option value="Q" data-i18n="ecQ">Alta (~25%)</option>
+            <option value="H" data-i18n="ecH">Massima (~30%)</option>
+          </select>
+          <label for="version" data-i18n="version">Dimensione della griglia</label>
+          <select id="version">
+            <option value="0" data-i18n="versionAuto" selected>Automatica</option>
+          </select>
+          <label for="margin" data-i18n="margin">Margine (in quadratini)</label>
+          <input id="margin" type="number" min="4" max="20" step="1" value="4" inputmode="numeric">
+          <label for="size" data-i18n="size">Dimensione del PNG</label>
+          <select id="size">
+            <option value="256" data-i18n="sizeOption" data-px="256">fino a 256 px</option>
+            <option value="512" data-i18n="sizeOption" data-px="512">fino a 512 px</option>
+            <option value="1024" data-i18n="sizeOption" data-px="1024" selected>fino a 1024 px</option>
+            <option value="2048" data-i18n="sizeOption" data-px="2048">fino a 2048 px</option>
+            <option value="3072" data-i18n="sizeOption" data-px="3072">fino a 3072 px</option>
+            <option value="4096" data-i18n="sizeOption" data-px="4096">fino a 4096 px</option>
+          </select>
+          <label for="fg" data-i18n="fg">Colore dei quadratini</label>
+          <input id="fg" type="color" value="#000000">
+          <label for="bg" data-i18n="bg">Colore di sfondo</label>
+          <input id="bg" type="color" value="#ffffff">
+          <label class="check"><input id="transparent" type="checkbox"> <span data-i18n="transparent">Sfondo trasparente</span></label>
+          <p id="contrast-warning" role="status" data-i18n="contrastWarning" hidden>Attenzione: con questi colori il codice potrebbe non essere letto. Usa quadratini scuri su uno sfondo chiaro.</p>
+          <button id="reset" type="button" data-i18n="reset">Ripristina</button>
+        </div>
+      </details>
     </form>
     <p id="error" role="alert" hidden></p>
     <section id="result" hidden>
