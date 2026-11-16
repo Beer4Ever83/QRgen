@@ -153,3 +153,12 @@ test("the page triggers no CSP violations", async () => {
   await download("#download-svg");
   assert.deepEqual(await page.evaluate(() => window.__cspViolations), []);
 });
+
+test("uses the Educare in Positivo palette", async () => {
+  const style = (selector, prop) =>
+    page.locator(selector).evaluate((el, p) => getComputedStyle(el)[p], prop);
+  assert.equal(await style("h1", "color"), "rgb(39, 68, 114)");
+  assert.equal(await style("button[type=submit]", "backgroundColor"), "rgb(39, 68, 114)");
+  assert.equal(await style("button[type=submit]", "color"), "rgb(255, 255, 255)");
+  assert.equal(await style("#error", "borderLeftColor"), "rgb(213, 104, 104)");
+});

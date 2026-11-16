@@ -1,14 +1,33 @@
+/* Palette from educareinpositivo.com */
+:root {
+  --navy: #274472;
+  --navy-dark: #1f365b;
+  --mauve: #b78cb9;
+  --periwinkle: #94abd5;
+  --soft-blue: #d5e0f2;
+  --red: #d56868;
+}
+
 body {
   margin: 0;
   font-family: system-ui, sans-serif;
   line-height: 1.5;
+  color: var(--navy);
+  background: #fff;
 }
 
 main {
   max-width: 32rem;
   margin: 0 auto;
-  padding: 1.5rem 1rem;
+  padding: 2rem 1rem;
   text-align: center;
+}
+
+h1 {
+  margin: 0 0 1.5rem;
+  font-size: 2.2rem;
+  font-style: italic;
+  font-weight: 700;
 }
 
 form {
@@ -16,23 +35,54 @@ form {
   flex-wrap: wrap;
   gap: 0.5rem;
   justify-content: center;
+  padding: 1.25rem;
+  border: 1px solid var(--mauve);
+  border-radius: 1rem;
+  background: var(--soft-blue);
 }
 
 label {
   flex-basis: 100%;
   text-align: left;
+  font-weight: 700;
 }
 
 input {
   flex: 1 1 14rem;
   min-width: 0;
-  padding: 0.5rem;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--periwinkle);
+  border-radius: 20px;
+  background: #fff;
+  color: inherit;
   font: inherit;
 }
 
+input:focus {
+  outline: none;
+  border-color: var(--navy);
+  box-shadow: 0 0 0 3px rgb(183 140 185 / 0.5);
+}
+
 button {
-  padding: 0.5rem 1rem;
+  padding: 0.5rem 1.25rem;
+  border: 1px solid var(--navy);
+  border-radius: 20px;
+  background: var(--navy);
+  color: #fff;
   font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+button:hover {
+  background: var(--navy-dark);
+}
+
+button:focus-visible,
+.downloads a:focus-visible {
+  outline: 3px solid var(--mauve);
+  outline-offset: 2px;
 }
 
 [hidden] {
@@ -40,7 +90,20 @@ button {
 }
 
 #error {
-  color: #b00020;
+  margin: 1rem 0 0;
+  padding: 0.75rem 1rem;
+  border-left: 4px solid var(--red);
+  border-radius: 0.5rem;
+  background: rgb(213 104 104 / 0.12);
+  text-align: left;
+}
+
+#result {
+  margin-top: 1.5rem;
+  padding: 1.25rem;
+  border: 1px solid var(--mauve);
+  border-radius: 1rem;
+  box-shadow: 0 4px 16px rgb(39 68 114 / 0.12);
 }
 
 #preview {
@@ -51,6 +114,7 @@ button {
 
 #encoded-url {
   overflow-wrap: anywhere;
+  font-weight: 700;
 }
 
 .downloads a {
@@ -59,11 +123,17 @@ button {
   justify-content: center;
   box-sizing: border-box;
   min-height: 44px;
-  margin: 0 0.25rem;
-  padding: 0.5rem 1rem;
-  border: 1px solid currentColor;
-  border-radius: 4px;
-  color: inherit;
+  margin: 0.25rem;
+  padding: 0.5rem 1.25rem;
+  border: 1px solid var(--navy);
+  border-radius: 20px;
+  color: var(--navy);
   font: inherit;
+  font-weight: 700;
   text-decoration: none;
+}
+
+.downloads a:hover {
+  background: var(--navy);
+  color: #fff;
 }
